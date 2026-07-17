@@ -1,0 +1,5 @@
+{
+    "username": "",
+    "oauth_token": "oauth:{insert_token}",
+    "channel": "#{name}"
+}
