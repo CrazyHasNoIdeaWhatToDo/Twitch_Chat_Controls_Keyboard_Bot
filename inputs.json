@@ -3,6 +3,16 @@
     "s": "s",
     "a": "a",
     "d": "d",
+    "q": "q",
+    "e": "e",
+    "f": "f",
     "1": "left_click",
-    "2": "right_click"
+    "2": "right_click",
+    "c": "shiftleft",
+    "x": "altleft",
+    "z": "tab",
+    "i": "mouse_up",
+    "j": "mouse_left",
+    "k": "mouse_down",
+    "l": "mouse_right"
 }
