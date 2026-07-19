@@ -4,6 +4,7 @@ import json
 import os
 import tkinter as tk
 from tkinter import scrolledtext
+import command_wand
 from command_wand import handle_twitch_command
 
 class TwitchChatApp:
@@ -50,6 +51,10 @@ class TwitchChatApp:
 
         self.stop_btn = tk.Button(self.btn_frame, text="Stop", command=self.stop_monitoring, bg="red", fg="white", width=10, state=tk.DISABLED)
         self.stop_btn.grid(row=0, column=1, padx=5)
+
+        # Refresh Button
+        self.refresh_btn = tk.Button(self.btn_frame, text="Refresh", command=self.refresh_connection, bg="blue", fg="white", width=10)
+        self.refresh_btn.grid(row=0, column=2, padx=5)
 
         # Chat Console Output
         tk.Label(root, text="Live Chat Output:").pack(anchor="w", padx=15)
@@ -110,11 +115,11 @@ class TwitchChatApp:
                         user = response.split('!')[0].replace(':', '')
                         msg = response.split('PRIVMSG')[1].split(':', 1)[1].strip()
 
-                        # 1. Print it to your Tkinter console
+                        # 1. Print raw chat message to Tkinter console
                         self.log_to_console(f"[{user}]: {msg}")
 
-                        # 2. SEND IT TO YOUR COMMAND WAND FUNCTION HERE:
-                        handle_twitch_command(user, msg)
+                        # 2. Pass control over to command_wand with the UI log callback
+                        handle_twitch_command(user, msg, log_callback=self.log_to_console)
 
                     except IndexError:
                         pass
@@ -123,10 +128,16 @@ class TwitchChatApp:
             self.log_to_console(f"❌ Error: {str(e)}")
         finally:
             self.cleanup_socket()
+            # If we disconnected unexpectedly, reset the button states safely
+            self.is_running = False
+            self.start_btn.config(state=tk.NORMAL)
+            self.stop_btn.config(state=tk.DISABLED)
 
     def start_monitoring(self):
         """Triggered by the Start Button."""
-        # Grab values from the entry fields (which loaded from JSON)
+        if self.is_running:
+            return
+
         username = self.username_entry.get().strip()
         token = self.token_entry.get().strip()
         channel = self.channel_entry.get().strip()
@@ -154,10 +165,25 @@ class TwitchChatApp:
         """Triggered by the Stop Button."""
         self.is_running = False
         self.log_to_console("🛑 Stopping stream...")
+        
+        # Call command_wand to release stuck keys and pass console logging
+        try:
+            if hasattr(command_wand, 'release_all_keys'):
+                command_wand.release_all_keys(log_callback=self.log_to_console)
+        except Exception as e:
+            self.log_to_console(f"⚠️ Failed to release keys safely: {e}")
+
         self.cleanup_socket()
         
         self.start_btn.config(state=tk.NORMAL)
         self.stop_btn.config(state=tk.DISABLED)
+
+    def refresh_connection(self):
+        """Triggered by the Refresh Button. Restarts the stream connection smoothly."""
+        self.log_to_console("🔄 Refreshing connection...")
+        self.stop_monitoring()
+        # Gives the socket a brief 500ms breather to close completely before turning back on
+        self.root.after(500, self.start_monitoring)
 
     def cleanup_socket(self):
         """Safely shuts down the open socket connection."""
