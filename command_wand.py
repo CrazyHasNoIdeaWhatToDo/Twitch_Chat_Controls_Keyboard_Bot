@@ -8,6 +8,7 @@ import pydirectinput  # Handling both keys and mouse via DirectInput now
 pydirectinput.FAILSAFE = True
 DELAY_BETWEEN_PRESSES = 0.05
 HOLD_DURATION = 0.5  # ⏱️ The time to hold down each keyboard key
+FLICK_DISTANCE = 100  # 🖱️ Pixels to move the mouse during a flick (Adjust this!)
 
 
 def get_timestamped_msg(text):
@@ -63,6 +64,25 @@ def handle_twitch_command(username: str, message: str, log_callback=None):
                 pydirectinput.mouseDown(button='right')
                 time.sleep(0.1)
                 pydirectinput.mouseUp(button='right')
+
+            # --- NEW MOUSE FLICK CONTROLS ---
+            elif action == "mouse_up":
+                log(f"  -> Chat '{char}' -> ⬆️ Flicking Mouse Up")
+                pydirectinput.moveRel(0, -FLICK_DISTANCE)
+
+            elif action == "mouse_down":
+                log(f"  -> Chat '{char}' -> ⬇️ Flicking Mouse Down")
+                pydirectinput.moveRel(0, FLICK_DISTANCE)
+
+            elif action == "mouse_left":
+                log(f"  -> Chat '{char}' -> ⬅️ Flicking Mouse Left")
+                pydirectinput.moveRel(-FLICK_DISTANCE, 0)
+
+            elif action == "mouse_right":
+                log(f"  -> Chat '{char}' -> ➡️ Flicking Mouse Right")
+                pydirectinput.moveRel(FLICK_DISTANCE, 0)
+            # --------------------------------
+
             else:
                 log(f"  -> Chat '{char}' -> ⌨️ Holding Keyboard '{action}' for {HOLD_DURATION}s")
                 pydirectinput.keyDown(action)
@@ -87,8 +107,10 @@ def release_all_keys(log_callback=None):
     pydirectinput.mouseUp(button='right')
 
     # Release any keyboard key found in your inputs map
+    # Ignore our custom mouse string identifiers so it doesn't crash pydirectinput
+    mouse_actions = ["left_click", "right_click", "mouse_up", "mouse_down", "mouse_left", "mouse_right"]
     for action in inputs_map.values():
-        if action not in ["left_click", "right_click"]:
+        if action not in mouse_actions:
             try:
                 pydirectinput.keyUp(action)
             except Exception:
